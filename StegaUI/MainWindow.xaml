@@ -5,17 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:StegaUI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="394.081">
+        Title="MainWindow" Height="409.591" Width="394.081" ResizeMode="NoResize">
     <Grid>
-        <Button Content="Select cover image" HorizontalAlignment="Left" Margin="10,84,0,0" VerticalAlignment="Top" Width="366" Height="40" Click="SelectCover_Click"/>
-        <Label Content="Selected cover image: " HorizontalAlignment="Left" Margin="0,10,0,0" VerticalAlignment="Top" Height="32" Width="139"/>
-        <Label Content="Label" HorizontalAlignment="Left" Margin="216,281,0,0" VerticalAlignment="Top" Height="57" Width="139"/>
-        <Button Content="Button" HorizontalAlignment="Left" Margin="10,219,0,0" VerticalAlignment="Top" Width="366" Height="57"/>
-        <Label Content="Label" HorizontalAlignment="Left" Margin="10,281,0,0" VerticalAlignment="Top" Height="70" Width="366"/>
-        <Button Content="Button" HorizontalAlignment="Left" Margin="0,356,0,0" VerticalAlignment="Top" Width="224" Height="53"/>
-        <Label Content="{Binding CoverImage}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,47,0,0" Width="129" Height="32" RenderTransformOrigin="0.209,1.541"/>
-        <Label Content="{Binding CoverImageSize}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="256,10,0,0" Height="32" Width="99"/>
-        <Label Content="{Binding FreeBytes}" HorizontalAlignment="Left" Margin="256,47,0,0" VerticalAlignment="Top" Width="99" Height="32"/>
+        <Button Content="Select cover image" HorizontalAlignment="Left" Margin="208,103,0,0" VerticalAlignment="Top" Width="168" Height="40" Click="SelectCover_Click"/>
+        <Label Content="Selected cover image: " HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="139"/>
+        <Button Content="Select file to hide" HorizontalAlignment="Left" Margin="208,271,0,0" VerticalAlignment="Top" Width="168" Click="SelectMessage_Click" Height="40"/>
+        <Label Content="{Binding CoverImage}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="208,10,0,0" Width="166" RenderTransformOrigin="0.209,1.541" Height="25"/>
+        <Label Content="{Binding CoverImageSize}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="208,41,0,0" Width="166"/>
+        <Label Content="{Binding FreeBytes}" HorizontalAlignment="Left" Margin="208,72,0,0" VerticalAlignment="Top" Width="168" RenderTransformOrigin="-0.4,0.336"/>
+        <Label Content="Size:" HorizontalAlignment="Left" Margin="10,41,0,0" VerticalAlignment="Top" Width="85"/>
+        <Label Content="Free bytes:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,72,0,0" Width="85"/>
+        <Label Content="File to hide:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,209,0,0" Width="129"/>
+        <Label Content="{Binding MessageFile}" HorizontalAlignment="Left" Margin="208,209,0,0" VerticalAlignment="Top" Width="168"/>
+        <Label Content="Size:" HorizontalAlignment="Left" Margin="10,240,0,0" VerticalAlignment="Top" Width="129"/>
+        <Label Content="{Binding MessageSize}" HorizontalAlignment="Left" Margin="208,240,0,0" VerticalAlignment="Top" Width="168"/>
+        <Button Content="Encode" HorizontalAlignment="Left" Margin="0,325,0,0" VerticalAlignment="Top" Width="388" Height="56" Click="Encode_Click"/>
 
     </Grid>
 </Window>

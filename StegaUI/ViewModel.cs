@@ -11,6 +11,8 @@ namespace StegaUI
         private string coverImage;
         private long coverImageSize;
         private long freeBytes;
+        private string messageFile;
+        private long messageSize;
 
         public string CoverImage
         {
@@ -39,6 +41,28 @@ namespace StegaUI
             set
             {
                 this.freeBytes = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        public string MessagePath { get; set; }
+
+        public string MessageFile
+        {
+            get { return messageFile; }
+            set
+            {
+                this.messageFile = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        public long MessageSize
+        {
+            get { return messageSize; }
+            set
+            {
+                this.messageSize = value;
                 NotifyPropertyChanged();
             }
         }

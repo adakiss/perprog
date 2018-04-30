@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace Steganography
 {
-    class Program
+    public class EncodeRequest
     {
-        static void Main(string[] args)
-        {
-        }
+        public string CoverPath { get; set; }
+        public string MessagePath { get; set; }
     }
 }

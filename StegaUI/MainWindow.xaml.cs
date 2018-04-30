@@ -24,7 +24,6 @@ namespace StegaUI
     public partial class MainWindow : Window
     {
         private ViewModel vm;
-        private FileSystemService fileSystemService;
         private SteganographyService stegaService;
 
         public MainWindow()
@@ -32,7 +31,6 @@ namespace StegaUI
             InitializeComponent();
             vm = new ViewModel();
             this.DataContext = vm;
-            fileSystemService = new FileSystemService();
             stegaService = new SteganographyService();
         }
 
@@ -44,10 +42,27 @@ namespace StegaUI
             {
                 vm.CoverImage = System.IO.Path.GetFileName(ofd.FileName);
                 vm.CoverImagePath = ofd.FileName;
-                vm.CoverImageSize = fileSystemService.CalculateFileSize(ofd.FileName);
-                vm.FreeBytes = stegaService.CalculateMaxBytesForContent(ofd.FileName);
+                vm.CoverImageSize = stegaService.CalculateFileSize(ofd.FileName);
+                vm.FreeBytes = stegaService.CalculateFreeBytesForMessage(ofd.FileName);
             }
 
+        }
+
+        private void SelectMessage_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Text files(*.txt) | *.txt";
+            if(ofd.ShowDialog() == true)
+            {
+                vm.MessagePath = ofd.FileName;
+                vm.MessageFile = System.IO.Path.GetFileName(ofd.FileName);
+                vm.MessageSize = stegaService.CalculateFileSize(ofd.FileName);
+            }
+        }
+
+        private void Encode_Click(object sender, RoutedEventArgs e)
+        {
+            stegaService.EncodeMessage(new EncodeRequest() { CoverPath = vm.CoverImagePath, MessagePath = vm.MessagePath });
         }
     }
 }

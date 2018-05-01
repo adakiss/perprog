@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="BaseValidator.cs" />
     <Compile Include="CalculateFreeBytesValidator.cs" />
+    <Compile Include="DecodeRequest.cs" />
     <Compile Include="EncodeMessageValidator.cs" />
     <Compile Include="EncodeRequest.cs" />
     <Compile Include="FileSizeCalcValidator.cs" />

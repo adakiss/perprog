@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:StegaUI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="409.591" Width="394.081" ResizeMode="NoResize">
+        Title="MainWindow" Height="471.148" Width="394.081" ResizeMode="NoResize">
     <Grid>
         <Button Content="Select cover image" HorizontalAlignment="Left" Margin="208,103,0,0" VerticalAlignment="Top" Width="168" Height="40" Click="SelectCover_Click"/>
         <Label Content="Selected cover image: " HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="139"/>
@@ -20,6 +20,7 @@
         <Label Content="Size:" HorizontalAlignment="Left" Margin="10,240,0,0" VerticalAlignment="Top" Width="129"/>
         <Label Content="{Binding MessageSize}" HorizontalAlignment="Left" Margin="208,240,0,0" VerticalAlignment="Top" Width="168"/>
         <Button Content="Encode" HorizontalAlignment="Left" Margin="0,325,0,0" VerticalAlignment="Top" Width="388" Height="56" Click="Encode_Click"/>
+        <Button Content="Decode" HorizontalAlignment="Left" Margin="0,386,0,0" VerticalAlignment="Top" Width="388" Height="56" Click="Decode_Click"/>
 
     </Grid>
 </Window>

@@ -64,5 +64,10 @@ namespace StegaUI
         {
             stegaService.EncodeMessage(new EncodeRequest() { CoverPath = vm.CoverImagePath, MessagePath = vm.MessagePath });
         }
+
+        private void Decode_Click(object sender, RoutedEventArgs e)
+        {
+            stegaService.DecodeMessage(new DecodeRequest() { EncodedMessagePath = "result.bmp", ResultPath = "decodedMessage.txt" });
+        }
     }
 }

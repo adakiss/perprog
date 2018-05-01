@@ -44,9 +44,9 @@ namespace Steganography
             Bitmap image = (Bitmap)Image.FromFile(request.CoverPath);
             int pixelCount = image.Width * image.Height;
             int freeBits = pixelCount * 3;
-            long maxFreeBytes = pixelCount / 255;
-            long headerBytes = maxFreeBytes / 255;
-            maxFreeBytes -= headerBytes;
+            long maxFreeBytes = freeBits / 8;
+            //long headerBytes = maxFreeBytes / 255; TODO implementbetter check for header
+            //maxFreeBytes -= headerBytes;
             if (maxFreeBytes < messageInfo.Length)
             {
                 throw new ValidationException("Message size is greater the the free bytes in cover image");

@@ -17,12 +17,14 @@ namespace Steganography
         private CalculateFreeBytesValidator freeByteCalcValidator;
         private EncodeMessageValidator encodeValidator;
         private FileSizeCalcValidator fileSizeCalcValidator;
+        private DecodeMessageValidator decodeValidator;
 
         public SteganographyService()
         {
             freeByteCalcValidator = new CalculateFreeBytesValidator();
             fileSizeCalcValidator = new FileSizeCalcValidator();
             encodeValidator = new EncodeMessageValidator();
+            decodeValidator = new DecodeMessageValidator();
         }
 
         public long CalculateFileSize(string path)
@@ -38,152 +40,136 @@ namespace Steganography
             Bitmap image = (Bitmap)Image.FromFile(path);
             int pixelCount = image.Width * image.Height;
             int freeBits = pixelCount * 3;
-            long maxFreeBytes = pixelCount / 8;
-            long headerBytes = maxFreeBytes / 255;
-            return maxFreeBytes - headerBytes;
+            int headerBits = new BitArray(BitConverter.GetBytes(freeBits)).Count;
+            return (freeBits - headerBits) / 8;
         }
 
         public void EncodeMessage(EncodeRequest request)
         {
             encodeValidator.Validate(request);
-
             Bitmap coverImage = new Bitmap(request.CoverPath);
             Rectangle rect = new Rectangle(0, 0, coverImage.Width, coverImage.Height);
             BitmapData coverData = coverImage.LockBits(rect, ImageLockMode.ReadWrite, coverImage.PixelFormat);
             IntPtr ptr = coverData.Scan0;
             int bytes = Math.Abs(coverData.Stride) * coverImage.Height;
-
-
-            BitArray message = new BitArray(File.ReadAllBytes(request.MessagePath));
-            int messageLength = message.Count;
-            Debug.WriteLine(messageLength.ToString());
-            Debug.WriteLine(BitConverter.GetBytes(messageLength));
-            BitArray messageLengthBinary = new BitArray(BitConverter.GetBytes(messageLength));
-            logBitArray(messageLengthBinary);
-            BitArray header = new BitArray(BitConverter.GetBytes(bytes));
-            header.SetAll(false);
-
-           // int lastSetHeaderIndex = header.Length;
-            for(int i = 0; i < messageLengthBinary.Count; i++)
-            {
-                if(messageLengthBinary[i])
-                {
-                    header[i] = true;
-                }
-            }
-            logBitArray(header);
-
-
-            BitArray messageWithHeader = new BitArray(header.Count + message.Count);
-            for(int j = 0; j < header.Count; j++)
-            {
-                messageWithHeader[j] = header[j];
-            }
-            for(int k = 0; k < message.Count; k++)
-            {
-                messageWithHeader[k + header.Count] = message[k];
-            }
-
-            logBitArray(messageWithHeader);
-            byte[] rgbValues = new byte[bytes];
-            Marshal.Copy(ptr, rgbValues, 0, bytes);
-            Parallel.For(0, bytes, 
-                index => {
-                    if(index < messageWithHeader.Count)
-                    {
-                        if(messageWithHeader[index])
-                        {
-                            rgbValues[index] -= (byte)(rgbValues[index] % 2);
-                            rgbValues[index]++;
-                        } else
-                        {
-                            rgbValues[index] -= (byte)(rgbValues[index] % 2);
-                        }
-                    }
-                }
-            );
-            Marshal.Copy(rgbValues, 0, ptr, bytes);
+            BitArray messageWithHeader = CreateMessageWithHeader(bytes, request.MessagePath);
+            EncodeMessageIntoCover(messageWithHeader, bytes, ptr);
             coverImage.UnlockBits(coverData);
             coverImage.Save("result.bmp");
         }
 
-        private void logBitArray(BitArray arr)
+        private BitArray CreateHeader(int messageLength, int maxBytes)
         {
-            String str = "";
-            for (int x = 0; x < arr.Count; x++)
+            BitArray header = new BitArray(BitConverter.GetBytes(maxBytes));
+            BitArray messageLengthBinary = new BitArray(BitConverter.GetBytes(messageLength));
+            header.SetAll(false);
+            for (int i = 0; i < messageLengthBinary.Count; i++)
             {
-                str += arr[x] ? "1" : "0";
+                if (messageLengthBinary[i])
+                {
+                    header[i] = true;
+                }
             }
-            Debug.WriteLine(str);
+            return header;
+        }
+
+        private BitArray AddHeaderToMessage(BitArray header, BitArray messageContent)
+        {
+            BitArray messageWithHeader = new BitArray(header.Count + messageContent.Count);
+            for (int i = 0; i < header.Count; i++)
+            {
+                messageWithHeader[i] = header[i];
+            }
+            for (int j = 0; j < messageContent.Count; j++)
+            {
+                messageWithHeader[j + header.Count] = messageContent[j];
+            }
+            return messageWithHeader;
+        }
+
+        private BitArray CreateMessageWithHeader(int allBytes, string messageContentPath)
+        {
+            BitArray message = new BitArray(File.ReadAllBytes(messageContentPath));
+            BitArray header = CreateHeader(message.Count, allBytes);
+            return AddHeaderToMessage(header, message);
+        }
+
+        private void EncodeMessageIntoCover(BitArray message, int allBytes, IntPtr firstByte)
+        {
+            byte[] rgbValues = new byte[allBytes];
+            Marshal.Copy(firstByte, rgbValues, 0, allBytes);
+            Parallel.For(0, message.Count,
+                index => {
+                    if (message[index])
+                    {
+                        rgbValues[index] -= (byte)(rgbValues[index] % 2);
+                        rgbValues[index]++;
+                    }
+                    else
+                    {
+                        rgbValues[index] -= (byte)(rgbValues[index] % 2);
+                    }
+                }
+            );
+            Marshal.Copy(rgbValues, 0, firstByte, allBytes);
         }
 
         public void DecodeMessage(DecodeRequest request)
         {
-            //TODO validate
-
+            decodeValidator.Validate(request);
             Bitmap encodedMessage = new Bitmap(request.EncodedMessagePath);
             Rectangle rect = new Rectangle(0, 0, encodedMessage.Width, encodedMessage.Height);
             BitmapData encodedData = encodedMessage.LockBits(rect, ImageLockMode.ReadWrite, encodedMessage.PixelFormat);
             IntPtr ptr = encodedData.Scan0;
             int bytes = Math.Abs(encodedData.Stride) * encodedMessage.Height;
-
-            BitArray lsbitArray = new BitArray(bytes);
-            byte[] rgbValues = new byte[bytes];
-            Marshal.Copy(ptr, rgbValues, 0, bytes);
-            Parallel.For(0, bytes,
-                index => {
-                        lsbitArray[index] = (rgbValues[index] % 2) == 1;
-                    }
-            );
-            Marshal.Copy(rgbValues, 0, ptr, bytes);
+            BitArray lsbitArray = ReadAllLSBits(bytes, ptr);
             encodedMessage.UnlockBits(encodedData);
+            BitArray header = GetHeader(lsbitArray, bytes);
+            List<byte> decodedBytes = DecodeBytes(lsbitArray, header);
+            File.WriteAllBytes(request.ResultPath, decodedBytes.ToArray());
+        }
 
-            BitArray header = new BitArray(BitConverter.GetBytes(bytes));
-            for(int i = 0; i < header.Length; i++)
+        private BitArray ReadAllLSBits(int allBytes, IntPtr firstByte)
+        {
+            BitArray lsbitArray = new BitArray(allBytes);
+            byte[] rgbValues = new byte[allBytes];
+            Marshal.Copy(firstByte, rgbValues, 0, allBytes);
+            Parallel.For(0, allBytes,
+                index => {
+                    lsbitArray[index] = (rgbValues[index] % 2) == 1;
+                }
+            );
+            Marshal.Copy(rgbValues, 0, firstByte, allBytes);
+            return lsbitArray;
+        }
+
+        private BitArray GetHeader(BitArray message, int allBytes)
+        {
+            BitArray header = new BitArray(BitConverter.GetBytes(allBytes));
+            for (int i = 0; i < header.Length; i++)
             {
-                header[i] = lsbitArray[i];
+                header[i] = message[i];
             }
-            logBitArray(header);
-            //logBitArray(lsbitArray);
+            return header;
+        }
 
-            int messageLength = getIntFromBitArray(header);
+        private List<byte> DecodeBytes(BitArray content, BitArray header)
+        {
+            int messageLength = ConvertUtils.GetIntFromBitArray(header);
             int currentByteIndex = 0;
             List<byte> byteList = new List<byte>();
             BitArray currentByte = new BitArray(8);
             for (int j = header.Count; j < header.Count + messageLength; j++)
             {
-                currentByte[currentByteIndex] = lsbitArray[j];
+                currentByte[currentByteIndex] = content[j];
                 currentByteIndex++;
-                if(currentByteIndex == 8)
+                if (currentByteIndex == 8)
                 {
-                    byteList.Add(getByteFromBitArray(currentByte));
+                    byteList.Add(ConvertUtils.GetByteFromBitArray(currentByte));
                     currentByteIndex = 0;
                 }
             }
-            File.WriteAllBytes(request.ResultPath, byteList.ToArray());
-            Debug.WriteLine(messageLength.ToString());
-        }
-
-        private int getIntFromBitArray(BitArray bitArray)
-        {
-
-            if (bitArray.Length > 32)
-                throw new ArgumentException("Argument length shall be at most 32 bits.");
-
-            int[] array = new int[1];
-            bitArray.CopyTo(array, 0);
-            return array[0];
-
-        }
-
-        private byte getByteFromBitArray(BitArray bitArray)
-        {
-            if (bitArray.Length > 8)
-                throw new ArgumentException("Argument length shall be at most 8 bits.");
-
-            byte[] array = new byte[1];
-            bitArray.CopyTo(array, 0);
-            return array[0];
+            return byteList;
         }
     }
 }

@@ -48,6 +48,8 @@
   <ItemGroup>
     <Compile Include="BaseValidator.cs" />
     <Compile Include="CalculateFreeBytesValidator.cs" />
+    <Compile Include="ConvertUtils.cs" />
+    <Compile Include="DecodeMessageValidator.cs" />
     <Compile Include="DecodeRequest.cs" />
     <Compile Include="EncodeMessageValidator.cs" />
     <Compile Include="EncodeRequest.cs" />

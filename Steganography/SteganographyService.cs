@@ -55,7 +55,7 @@ namespace Steganography
             BitArray messageWithHeader = CreateMessageWithHeader(bytes, request.MessagePath);
             EncodeMessageIntoCover(messageWithHeader, bytes, ptr);
             coverImage.UnlockBits(coverData);
-            coverImage.Save("result.bmp");
+            coverImage.Save(request.ResultPath);
         }
 
         private BitArray CreateHeader(int messageLength, int maxBytes)

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Steganography
 {
-    class ValidationException : Exception
+    public class ValidationException : Exception
     {
         public ValidationException(string msg) : base(msg) { }
 

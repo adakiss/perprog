@@ -42,8 +42,15 @@ namespace StegaUI
             {
                 vm.CoverImage = System.IO.Path.GetFileName(ofd.FileName);
                 vm.CoverImagePath = ofd.FileName;
-                vm.CoverImageSize = stegaService.CalculateFileSize(ofd.FileName);
-                vm.FreeBytes = stegaService.CalculateFreeBytesForMessage(ofd.FileName);
+                try
+                {
+                    vm.CoverImageSize = stegaService.CalculateFileSize(ofd.FileName);
+                    vm.FreeBytes = stegaService.CalculateFreeBytesForMessage(ofd.FileName);
+                }
+                catch (ValidationException ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             }
 
         }
@@ -56,18 +63,80 @@ namespace StegaUI
             {
                 vm.MessagePath = ofd.FileName;
                 vm.MessageFile = System.IO.Path.GetFileName(ofd.FileName);
-                vm.MessageSize = stegaService.CalculateFileSize(ofd.FileName);
+                try
+                {
+                    vm.MessageSize = stegaService.CalculateFileSize(ofd.FileName);
+                }
+                catch (ValidationException ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             }
         }
 
         private void Encode_Click(object sender, RoutedEventArgs e)
         {
-            stegaService.EncodeMessage(new EncodeRequest() { CoverPath = vm.CoverImagePath, MessagePath = vm.MessagePath });
+            try
+            {
+                stegaService.EncodeMessage(new EncodeRequest() { CoverPath = vm.CoverImagePath, MessagePath = vm.MessagePath, ResultPath=vm.EncodeResultPath });
+                MessageBox.Show("Encoding finished", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch(ValidationException ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void Decode_Click(object sender, RoutedEventArgs e)
         {
-            stegaService.DecodeMessage(new DecodeRequest() { EncodedMessagePath = "result.bmp", ResultPath = "decodedMessage.txt" });
+            try
+            {
+                stegaService.DecodeMessage(new DecodeRequest() { EncodedMessagePath = vm.StegoImagePath, ResultPath = vm.ResultPath });
+                MessageBox.Show("Decoding finished", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (ValidationException ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void SelectStego_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Image Files(*.bmp) | *.bmp";
+            if(ofd.ShowDialog() == true)
+            {
+                vm.StegoImagePath = ofd.FileName;
+                vm.StegoImage = System.IO.Path.GetFileName(ofd.FileName);
+                try
+                {
+                    vm.StegoImageSize = stegaService.CalculateFileSize(ofd.FileName);
+                }
+                catch ( ValidationException ex )
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private void SelectResult_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Text files(*.txt) | *.txt";
+            if (ofd.ShowDialog() == true)
+            {
+                vm.ResultPath = ofd.FileName;
+            }
+        }
+
+        private void SelectEncodeResult_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Image Files(*.bmp) | *.bmp";
+            if (ofd.ShowDialog() == true)
+            {
+                vm.EncodeResultPath = ofd.FileName;
+            }
         }
     }
 }

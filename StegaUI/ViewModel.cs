@@ -13,6 +13,10 @@ namespace StegaUI
         private long freeBytes;
         private string messageFile;
         private long messageSize;
+        private string stegoImage;
+        private string resultPath;
+        private long stegoImageSize;
+        private string encodeResultPath;
 
         public string CoverImage
         {
@@ -63,6 +67,48 @@ namespace StegaUI
             set
             {
                 this.messageSize = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        public string StegoImage
+        {
+            get { return stegoImage; }
+            set
+            {
+                stegoImage = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        public string StegoImagePath { get; set; }
+
+        public string ResultPath
+        {
+            get { return resultPath; }
+            set
+            {
+                resultPath = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        public long StegoImageSize
+        {
+            get { return stegoImageSize; }
+            set
+            {
+                stegoImageSize = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        public string EncodeResultPath
+        {
+            get { return encodeResultPath; }
+            set
+            {
+                encodeResultPath = value;
                 NotifyPropertyChanged();
             }
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -16,6 +17,7 @@ namespace Steganography
             ValidateCoverImage(request.CoverPath);
             ValidateMessage(request.MessagePath);
             ValidateMessageSize(request);
+            ValidateResultPath(request.ResultPath);
         }
 
         private void ValidateCoverImage(string coverPath)
@@ -44,13 +46,21 @@ namespace Steganography
             Bitmap image = (Bitmap)Image.FromFile(request.CoverPath);
             int pixelCount = image.Width * image.Height;
             int freeBits = pixelCount * 3;
-            long maxFreeBytes = freeBits / 8;
-            //long headerBytes = maxFreeBytes / 255; TODO implementbetter check for header
-            //maxFreeBytes -= headerBytes;
-            if (maxFreeBytes < messageInfo.Length)
+            int headerBits = new BitArray(BitConverter.GetBytes(freeBits)).Count;
+            if (freeBits - headerBits < messageInfo.Length)
             {
                 throw new ValidationException("Message size is greater the the free bytes in cover image");
             }
+        }
+
+        private void ValidateResultPath(string resultPath)
+        {
+            if(resultPath == null)
+            {
+                throw new ValidationException("Result file has not been selected");
+            }
+            ValidateFileExists(resultPath, String.Format("Result file [{0}] does not exist", resultPath));
+            ValidateExtension(resultPath, "bmp", "Result file must have bmp extension");
         }
     }
 }

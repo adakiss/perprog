@@ -10,5 +10,6 @@ namespace Steganography
     {
         public string CoverPath { get; set; }
         public string MessagePath { get; set; }
+        public string ResultPath { get; set; }
     }
 }

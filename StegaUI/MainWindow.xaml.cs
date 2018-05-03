@@ -2,6 +2,7 @@
 using Steganography;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -78,7 +79,18 @@ namespace StegaUI
         {
             try
             {
-                stegaService.EncodeMessage(new EncodeRequest() { CoverPath = vm.CoverImagePath, MessagePath = vm.MessagePath, ResultPath=vm.EncodeResultPath });
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                stegaService.EncodeMessageSeq(new EncodeRequest() { CoverPath = vm.CoverImagePath, MessagePath = vm.MessagePath, ResultPath=vm.EncodeResultPath });
+                stopwatch.Stop();
+                Debug.WriteLine(stopwatch.Elapsed);
+
+                stopwatch.Reset();
+                stopwatch.Start();
+                stegaService.EncodeMessage(new EncodeRequest() { CoverPath = vm.CoverImagePath, MessagePath = vm.MessagePath, ResultPath = vm.EncodeResultPath });
+                stopwatch.Stop();
+                Debug.WriteLine(stopwatch.Elapsed);
+
                 MessageBox.Show("Encoding finished", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch(ValidationException ex)
@@ -91,7 +103,17 @@ namespace StegaUI
         {
             try
             {
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
                 stegaService.DecodeMessage(new DecodeRequest() { EncodedMessagePath = vm.StegoImagePath, ResultPath = vm.ResultPath });
+                stopwatch.Stop();
+                Debug.WriteLine(stopwatch.Elapsed);
+
+                stopwatch.Restart();
+                stegaService.DecodeMessageSeq(new DecodeRequest() { EncodedMessagePath = vm.StegoImagePath, ResultPath = vm.ResultPath });
+                stopwatch.Stop();
+                Debug.WriteLine(stopwatch.Elapsed);
+
                 MessageBox.Show("Decoding finished", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (ValidationException ex)

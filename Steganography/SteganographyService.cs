@@ -46,6 +46,8 @@ namespace Steganography
 
         public void EncodeMessage(EncodeRequest request)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             encodeValidator.Validate(request);
             Bitmap coverImage = new Bitmap(request.CoverPath);
             Rectangle rect = new Rectangle(0, 0, coverImage.Width, coverImage.Height);
@@ -53,7 +55,27 @@ namespace Steganography
             IntPtr ptr = coverData.Scan0;
             int bytes = Math.Abs(coverData.Stride) * coverImage.Height;
             BitArray messageWithHeader = CreateMessageWithHeader(bytes, request.MessagePath);
+            sw.Stop();
+            Debug.WriteLine(sw.Elapsed);
             EncodeMessageIntoCover(messageWithHeader, bytes, ptr);
+            coverImage.UnlockBits(coverData);
+            coverImage.Save(request.ResultPath);
+        }
+
+        public void EncodeMessageSeq(EncodeRequest request)
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            encodeValidator.Validate(request);
+            Bitmap coverImage = new Bitmap(request.CoverPath);
+            Rectangle rect = new Rectangle(0, 0, coverImage.Width, coverImage.Height);
+            BitmapData coverData = coverImage.LockBits(rect, ImageLockMode.ReadWrite, coverImage.PixelFormat);
+            IntPtr ptr = coverData.Scan0;
+            int bytes = Math.Abs(coverData.Stride) * coverImage.Height;
+            BitArray messageWithHeader = CreateMessageWithHeader(bytes, request.MessagePath);
+            sw.Stop();
+            Debug.WriteLine(sw.Elapsed);
+            EncodeMessageIntoCoverSeq(messageWithHeader, bytes, ptr);
             coverImage.UnlockBits(coverData);
             coverImage.Save(request.ResultPath);
         }
@@ -97,10 +119,14 @@ namespace Steganography
         private void EncodeMessageIntoCover(BitArray message, int allBytes, IntPtr firstByte)
         {
             byte[] rgbValues = new byte[allBytes];
+            bool[] arr = new bool[message.Count];
+            message.CopyTo(arr, 0);
             Marshal.Copy(firstByte, rgbValues, 0, allBytes);
-            Parallel.For(0, message.Count,
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            Parallel.For(0, arr.Length,
                 index => {
-                    if (message[index])
+                    if (arr[index])
                     {
                         rgbValues[index] -= (byte)(rgbValues[index] % 2);
                         rgbValues[index]++;
@@ -111,7 +137,34 @@ namespace Steganography
                     }
                 }
             );
+            sw.Stop();
+            Debug.WriteLine(sw.Elapsed);
             Marshal.Copy(rgbValues, 0, firstByte, allBytes);
+        }
+
+        private void EncodeMessageIntoCoverSeq(BitArray message, int allBytes, IntPtr firstByte)
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            byte[] rgbValues = new byte[allBytes];
+            bool[] arr = new bool[message.Count];
+            message.CopyTo(arr, 0);
+            Marshal.Copy(firstByte, rgbValues, 0, allBytes);
+            for(int i = 0; i < arr.Length; i++)
+            {
+                if (arr[i])
+                {
+                    rgbValues[i] -= (byte)(rgbValues[i] % 2);
+                    rgbValues[i]++;
+                }
+                else
+                {
+                    rgbValues[i] -= (byte)(rgbValues[i] % 2);
+                }
+            }
+            Marshal.Copy(rgbValues, 0, firstByte, allBytes);
+            sw.Stop();
+            Debug.WriteLine(sw.Elapsed);
         }
 
         public void DecodeMessage(DecodeRequest request)
@@ -129,17 +182,55 @@ namespace Steganography
             File.WriteAllBytes(request.ResultPath, decodedBytes.ToArray());
         }
 
+        public void DecodeMessageSeq(DecodeRequest request)
+        {
+            decodeValidator.Validate(request);
+            Bitmap encodedMessage = new Bitmap(request.EncodedMessagePath);
+            Rectangle rect = new Rectangle(0, 0, encodedMessage.Width, encodedMessage.Height);
+            BitmapData encodedData = encodedMessage.LockBits(rect, ImageLockMode.ReadWrite, encodedMessage.PixelFormat);
+            IntPtr ptr = encodedData.Scan0;
+            int bytes = Math.Abs(encodedData.Stride) * encodedMessage.Height;
+            BitArray lsbitArray = ReadAllLSBitsSeq(bytes, ptr);
+            encodedMessage.UnlockBits(encodedData);
+            BitArray header = GetHeader(lsbitArray, bytes);
+            List<byte> decodedBytes = DecodeBytes(lsbitArray, header);
+            File.WriteAllBytes(request.ResultPath, decodedBytes.ToArray());
+        }
+
         private BitArray ReadAllLSBits(int allBytes, IntPtr firstByte)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             BitArray lsbitArray = new BitArray(allBytes);
+            bool[] arr = new bool[lsbitArray.Count];
+            lsbitArray.CopyTo(arr, 0);
             byte[] rgbValues = new byte[allBytes];
             Marshal.Copy(firstByte, rgbValues, 0, allBytes);
             Parallel.For(0, allBytes,
                 index => {
-                    lsbitArray[index] = (rgbValues[index] % 2) == 1;
+                    arr[index] = (rgbValues[index] % 2) == 1;
                 }
             );
             Marshal.Copy(rgbValues, 0, firstByte, allBytes);
+            sw.Stop();
+            Debug.WriteLine(sw.Elapsed);
+            return lsbitArray;
+        }
+
+        private BitArray ReadAllLSBitsSeq(int allBytes, IntPtr firstByte)
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            BitArray lsbitArray = new BitArray(allBytes);
+            byte[] rgbValues = new byte[allBytes];
+            Marshal.Copy(firstByte, rgbValues, 0, allBytes);
+            for(int i = 0; i < allBytes; i++)
+            {
+                lsbitArray[i] = (rgbValues[i] % 2) == 1;
+            }
+            Marshal.Copy(rgbValues, 0, firstByte, allBytes);
+            sw.Stop();
+            Debug.WriteLine(sw.Elapsed);
             return lsbitArray;
         }
 

@@ -46,8 +46,6 @@ namespace Steganography
 
         public void EncodeMessage(EncodeRequest request)
         {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
             encodeValidator.Validate(request);
             Bitmap coverImage = new Bitmap(request.CoverPath);
             Rectangle rect = new Rectangle(0, 0, coverImage.Width, coverImage.Height);
@@ -55,8 +53,6 @@ namespace Steganography
             IntPtr ptr = coverData.Scan0;
             int bytes = Math.Abs(coverData.Stride) * coverImage.Height;
             BitArray messageWithHeader = CreateMessageWithHeader(bytes, request.MessagePath);
-            sw.Stop();
-            Debug.WriteLine(sw.Elapsed);
             EncodeMessageIntoCover(messageWithHeader, bytes, ptr);
             coverImage.UnlockBits(coverData);
             coverImage.Save(request.ResultPath);
@@ -64,8 +60,6 @@ namespace Steganography
 
         public void EncodeMessageSeq(EncodeRequest request)
         {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
             encodeValidator.Validate(request);
             Bitmap coverImage = new Bitmap(request.CoverPath);
             Rectangle rect = new Rectangle(0, 0, coverImage.Width, coverImage.Height);
@@ -73,8 +67,6 @@ namespace Steganography
             IntPtr ptr = coverData.Scan0;
             int bytes = Math.Abs(coverData.Stride) * coverImage.Height;
             BitArray messageWithHeader = CreateMessageWithHeader(bytes, request.MessagePath);
-            sw.Stop();
-            Debug.WriteLine(sw.Elapsed);
             EncodeMessageIntoCoverSeq(messageWithHeader, bytes, ptr);
             coverImage.UnlockBits(coverData);
             coverImage.Save(request.ResultPath);
@@ -122,8 +114,6 @@ namespace Steganography
             bool[] arr = new bool[message.Count];
             message.CopyTo(arr, 0);
             Marshal.Copy(firstByte, rgbValues, 0, allBytes);
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
             Parallel.For(0, arr.Length,
                 index => {
                     if (arr[index])
@@ -137,15 +127,11 @@ namespace Steganography
                     }
                 }
             );
-            sw.Stop();
-            Debug.WriteLine(sw.Elapsed);
             Marshal.Copy(rgbValues, 0, firstByte, allBytes);
         }
 
         private void EncodeMessageIntoCoverSeq(BitArray message, int allBytes, IntPtr firstByte)
         {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
             byte[] rgbValues = new byte[allBytes];
             bool[] arr = new bool[message.Count];
             message.CopyTo(arr, 0);
@@ -163,8 +149,6 @@ namespace Steganography
                 }
             }
             Marshal.Copy(rgbValues, 0, firstByte, allBytes);
-            sw.Stop();
-            Debug.WriteLine(sw.Elapsed);
         }
 
         public void DecodeMessage(DecodeRequest request)
@@ -175,7 +159,7 @@ namespace Steganography
             BitmapData encodedData = encodedMessage.LockBits(rect, ImageLockMode.ReadWrite, encodedMessage.PixelFormat);
             IntPtr ptr = encodedData.Scan0;
             int bytes = Math.Abs(encodedData.Stride) * encodedMessage.Height;
-            BitArray lsbitArray = ReadAllLSBits(bytes, ptr);
+            bool[] lsbitArray = ReadAllLSBits(bytes, ptr);
             encodedMessage.UnlockBits(encodedData);
             BitArray header = GetHeader(lsbitArray, bytes);
             List<byte> decodedBytes = DecodeBytes(lsbitArray, header);
@@ -190,20 +174,16 @@ namespace Steganography
             BitmapData encodedData = encodedMessage.LockBits(rect, ImageLockMode.ReadWrite, encodedMessage.PixelFormat);
             IntPtr ptr = encodedData.Scan0;
             int bytes = Math.Abs(encodedData.Stride) * encodedMessage.Height;
-            BitArray lsbitArray = ReadAllLSBitsSeq(bytes, ptr);
+            bool[] lsbitArray = ReadAllLSBitsSeq(bytes, ptr);
             encodedMessage.UnlockBits(encodedData);
             BitArray header = GetHeader(lsbitArray, bytes);
             List<byte> decodedBytes = DecodeBytes(lsbitArray, header);
             File.WriteAllBytes(request.ResultPath, decodedBytes.ToArray());
         }
 
-        private BitArray ReadAllLSBits(int allBytes, IntPtr firstByte)
+        private bool[] ReadAllLSBits(int allBytes, IntPtr firstByte)
         {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            BitArray lsbitArray = new BitArray(allBytes);
-            bool[] arr = new bool[lsbitArray.Count];
-            lsbitArray.CopyTo(arr, 0);
+            bool[] arr = new bool[allBytes];
             byte[] rgbValues = new byte[allBytes];
             Marshal.Copy(firstByte, rgbValues, 0, allBytes);
             Parallel.For(0, allBytes,
@@ -212,16 +192,12 @@ namespace Steganography
                 }
             );
             Marshal.Copy(rgbValues, 0, firstByte, allBytes);
-            sw.Stop();
-            Debug.WriteLine(sw.Elapsed);
-            return lsbitArray;
+            return arr;
         }
 
-        private BitArray ReadAllLSBitsSeq(int allBytes, IntPtr firstByte)
+        private bool[] ReadAllLSBitsSeq(int allBytes, IntPtr firstByte)
         {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            BitArray lsbitArray = new BitArray(allBytes);
+            bool[] lsbitArray = new bool[allBytes];
             byte[] rgbValues = new byte[allBytes];
             Marshal.Copy(firstByte, rgbValues, 0, allBytes);
             for(int i = 0; i < allBytes; i++)
@@ -229,22 +205,23 @@ namespace Steganography
                 lsbitArray[i] = (rgbValues[i] % 2) == 1;
             }
             Marshal.Copy(rgbValues, 0, firstByte, allBytes);
-            sw.Stop();
-            Debug.WriteLine(sw.Elapsed);
             return lsbitArray;
         }
 
-        private BitArray GetHeader(BitArray message, int allBytes)
+        private BitArray GetHeader(bool[] message, int allBytes)
         {
             BitArray header = new BitArray(BitConverter.GetBytes(allBytes));
-            for (int i = 0; i < header.Length; i++)
-            {
-                header[i] = message[i];
-            }
+            bool[] headerArray = new bool[header.Count];
+            Parallel.For(0, header.Length,
+                index => 
+                {
+                    headerArray[index] = message[index]; 
+                });
+            header = new BitArray(headerArray);
             return header;
         }
 
-        private List<byte> DecodeBytes(BitArray content, BitArray header)
+        private List<byte> DecodeBytes(bool[] content, BitArray header)
         {
             int messageLength = ConvertUtils.GetIntFromBitArray(header);
             int currentByteIndex = 0;
